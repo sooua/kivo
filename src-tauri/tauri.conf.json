@@ -1,7 +1,7 @@
 {
   "productName": "Kivo",
   "version": "0.1.0",
-  "identifier": "com.semantic-monolith.app",
+  "identifier": "net.sooua.kivo",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
