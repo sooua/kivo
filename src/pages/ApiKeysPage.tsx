@@ -364,11 +364,41 @@ function DomesticLlmPanel() {
 
 function OllamaCard() {
   const provider = PROVIDERS.find((p) => p.key === "ollama")!;
-  const { llmConfigs, setLlmConfig } = useStore();
-  const config = llmConfigs["ollama"] || {
-    apiKey: "",
-    endpoint: "",
-    model: "",
+  const { llmConfigs, setLlmConfig, verifiedEngines, setVerified, clearVerified } = useStore();
+  const config = llmConfigs["ollama"] || { apiKey: "", endpoint: "", model: "" };
+  const verified = !!verifiedEngines["ollama"];
+  const [testing, setTesting] = useState(false);
+  const [testMsg, setTestMsg] = useState("");
+
+  const handleTest = async () => {
+    setTesting(true);
+    setTestMsg("");
+    try {
+      const msg = await invoke<string>("test_connection", {
+        req: {
+          text: "hello",
+          from: "en",
+          to: "zh",
+          engine: "ollama",
+          api_key: null,
+          base_url: config.endpoint || provider.defaultEndpoint || null,
+          model: config.model || provider.defaultModel || null,
+        },
+      });
+      setVerified("ollama", true);
+      setTestMsg(msg);
+    } catch (err: unknown) {
+      clearVerified("ollama");
+      setTestMsg(typeof err === "string" ? err : String(err));
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  const handleChange = (field: string, value: string) => {
+    setLlmConfig("ollama", { [field]: value });
+    clearVerified("ollama");
+    setTestMsg("");
   };
 
   return (
@@ -394,9 +424,7 @@ function OllamaCard() {
               <input
                 type="text"
                 value={config.endpoint}
-                onChange={(e) =>
-                  setLlmConfig("ollama", { endpoint: e.target.value })
-                }
+                onChange={(e) => handleChange("endpoint", e.target.value)}
                 placeholder={provider.defaultEndpoint}
                 className="w-full bg-slate-800 border-none rounded-lg p-3 text-sm focus:ring-1 focus:ring-primary text-slate-200"
               />
@@ -408,24 +436,34 @@ function OllamaCard() {
               <input
                 type="text"
                 value={config.model}
-                onChange={(e) =>
-                  setLlmConfig("ollama", { model: e.target.value })
-                }
+                onChange={(e) => handleChange("model", e.target.value)}
                 placeholder={provider.defaultModel}
                 className="w-full bg-slate-800 border-none rounded-lg p-3 text-sm text-slate-200 focus:ring-1 focus:ring-primary"
               />
             </div>
+            {testMsg && (
+              <p className={`text-xs ${verified ? "text-emerald-400" : "text-red-400"}`}>{testMsg}</p>
+            )}
+            <button
+              onClick={handleTest}
+              disabled={testing}
+              className="w-full py-3 bg-white text-slate-900 font-black rounded-lg text-sm hover:bg-slate-200 transition-colors disabled:opacity-40"
+            >
+              {testing ? "Testing..." : "Test & Save"}
+            </button>
           </div>
         </div>
         <div className="bg-slate-800/50 backdrop-blur-md p-6 rounded-xl border border-white/5">
           <h4 className="text-sm font-bold mb-4 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-slate-400" />
+            <span className={`w-2 h-2 rounded-full ${verified ? "bg-emerald-400" : "bg-slate-400"}`} />
             System Health
           </h4>
           <div className="space-y-4">
             <div className="flex justify-between items-center text-xs">
               <span className="text-slate-400">Connection Status</span>
-              <span className="text-slate-400 font-bold">—</span>
+              <span className={`font-bold ${verified ? "text-emerald-400" : "text-slate-400"}`}>
+                {verified ? "CONNECTED" : "—"}
+              </span>
             </div>
             <div className="flex justify-between items-center text-xs">
               <span className="text-slate-400">Endpoint</span>
