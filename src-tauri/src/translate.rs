@@ -54,7 +54,37 @@ fn lang_name(code: &str) -> &str {
 }
 
 async fn translate_mymemory(client: &Client, req: &TranslateRequest) -> Result<String, String> {
-    let from = lang_code_mymemory(&req.from);
+    // For auto-detect, try to detect if the text looks like the target language
+    // by checking common character ranges, then pick a sensible source
+    let from_code = if req.from == "auto" {
+        // Simple heuristic: if text contains CJK characters and target is zh/ja/ko,
+        // default to English as source; otherwise use "en" as a safe default
+        let has_cjk = req.text.chars().any(|c| c >= '\u{4e00}' && c <= '\u{9fff}');
+        let has_hangul = req.text.chars().any(|c| c >= '\u{ac00}' && c <= '\u{d7af}');
+        let has_hiragana = req.text.chars().any(|c| c >= '\u{3040}' && c <= '\u{309f}');
+        let has_katakana = req.text.chars().any(|c| c >= '\u{30a0}' && c <= '\u{30ff}');
+        let has_cyrillic = req.text.chars().any(|c| c >= '\u{0400}' && c <= '\u{04ff}');
+        let has_arabic = req.text.chars().any(|c| c >= '\u{0600}' && c <= '\u{06ff}');
+
+        if has_cjk && !has_hiragana && !has_katakana {
+            if req.to == "zh" { "en" } else { "zh" }
+        } else if has_hiragana || has_katakana {
+            if req.to == "ja" { "en" } else { "ja" }
+        } else if has_hangul {
+            if req.to == "ko" { "en" } else { "ko" }
+        } else if has_cyrillic {
+            if req.to == "ru" { "en" } else { "ru" }
+        } else if has_arabic {
+            if req.to == "ar" { "en" } else { "ar" }
+        } else {
+            // Latin text — assume English
+            if req.to == "en" { "zh" } else { "en" }
+        }
+    } else {
+        &req.from
+    };
+
+    let from = lang_code_mymemory(from_code);
     let to = lang_code_mymemory(&req.to);
     let langpair = format!("{}|{}", from, to);
 
