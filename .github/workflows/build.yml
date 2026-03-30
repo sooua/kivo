@@ -6,6 +6,9 @@ on:
       - 'v*'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
@@ -52,15 +55,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           args: --target ${{ matrix.target }}
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Kivo ${{ github.ref_name }}'
+          releaseBody: |
+            Kivo ${{ github.ref_name }} — Desktop translation app.
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: kivo-${{ matrix.target }}
-          path: |
-            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.deb
-            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.AppImage
-            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.dmg
-            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.app
-            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.msi
-            src-tauri/target/${{ matrix.target }}/release/bundle/**/*.exe
+            **Downloads:**
+            - Windows: `.msi` or `.exe`
+            - macOS (Apple Silicon): `_aarch64.dmg`
+            - macOS (Intel): `_x64.dmg`
+            - Linux: `.deb` or `.AppImage`
+          releaseDraft: false
+          prerelease: false
