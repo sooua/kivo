@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { useStore } from "../store";
 import { useTranslate } from "../useTranslate";
 import { LANGUAGES, getProvider, PROVIDERS } from "../providers";
@@ -114,37 +115,53 @@ export default function TranslatePage() {
     setIsListening(true);
   }, [isListening, sourceLang, sourceText, setSourceText, setError]);
 
-  // Text-to-speech (volume button)
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Google TTS via backend
+  const playTts = useCallback(async (text: string, lang: string, setPlaying: (v: boolean) => void) => {
+    // Stop any current playback
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
+    setPlaying(true);
+    try {
+      const audioBytes = await invoke<number[]>("speak", { text, lang });
+      const uint8 = new Uint8Array(audioBytes);
+      const blob = new Blob([uint8], { type: "audio/mpeg" });
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => { setPlaying(false); URL.revokeObjectURL(url); audioRef.current = null; };
+      audio.onerror = () => { setPlaying(false); URL.revokeObjectURL(url); audioRef.current = null; };
+      await audio.play();
+    } catch {
+      setPlaying(false);
+    }
+  }, []);
+
+  // Text-to-speech for target text
   const handleSpeak = useCallback(() => {
     if (!targetText) return;
     if (isSpeaking) {
-      window.speechSynthesis.cancel();
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
       setIsSpeaking(false);
       return;
     }
-    const utterance = new SpeechSynthesisUtterance(targetText);
-    utterance.lang = langToBcp47(targetLang);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-    window.speechSynthesis.speak(utterance);
-    setIsSpeaking(true);
-  }, [targetText, targetLang, isSpeaking]);
+    playTts(targetText, targetLang, setIsSpeaking);
+  }, [targetText, targetLang, isSpeaking, playTts]);
 
   // Text-to-speech for source text
   const handleSpeakSource = useCallback(() => {
     if (!sourceText) return;
     if (isSpeakingSource) {
-      window.speechSynthesis.cancel();
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
       setIsSpeakingSource(false);
       return;
     }
-    const utterance = new SpeechSynthesisUtterance(sourceText);
-    utterance.lang = langToBcp47(sourceLang === "auto" ? "en" : sourceLang);
-    utterance.onend = () => setIsSpeakingSource(false);
-    utterance.onerror = () => setIsSpeakingSource(false);
-    window.speechSynthesis.speak(utterance);
-    setIsSpeakingSource(true);
-  }, [sourceText, sourceLang, isSpeakingSource]);
+    playTts(sourceText, sourceLang === "auto" ? "en" : sourceLang, setIsSpeakingSource);
+  }, [sourceText, sourceLang, isSpeakingSource, playTts]);
 
   // Copy to clipboard
   const handleCopy = async () => {
