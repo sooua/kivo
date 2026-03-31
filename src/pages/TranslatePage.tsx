@@ -345,13 +345,12 @@ export default function TranslatePage() {
             value={sourceText}
             onChange={(e) => setSourceText(e.target.value)}
             onKeyDown={handleKeyDown}
-            maxLength={5000}
             className="flex-1 w-full bg-transparent border-none focus:ring-0 focus:outline-none text-xl text-on-surface resize-none placeholder:text-on-surface-variant/30"
             placeholder="Enter text to translate..."
           />
           <div className="mt-6 flex justify-between items-end">
             <span className="text-[10px] font-bold text-on-surface-variant opacity-40">
-              {sourceText.length} / 5000 CHARACTERS
+              {sourceText.length} CHARACTERS
             </span>
             <button
               onClick={translate}

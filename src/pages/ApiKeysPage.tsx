@@ -404,81 +404,83 @@ function OllamaCard() {
   return (
     <div className="bg-slate-900 text-white p-10 rounded-xl relative">
       <div className="absolute -right-20 -top-20 w-64 h-64 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
-      <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
-        <div>
-          <div className="flex items-center gap-4 mb-4">
-            <span className="bg-primary p-3 rounded-lg">
-              <span className="material-symbols-outlined text-white">dns</span>
-            </span>
-            <h3 className="text-3xl font-black">Ollama</h3>
+      <div className="relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          <div>
+            <div className="flex items-center gap-4 mb-4">
+              <span className="bg-primary p-3 rounded-lg">
+                <span className="material-symbols-outlined text-white">dns</span>
+              </span>
+              <h3 className="text-3xl font-black">Ollama</h3>
+            </div>
+            <p className="text-slate-400 text-sm leading-relaxed mb-6">
+              Run private Llama 3, Mistral, or Gemma models directly on your
+              hardware. Zero latency, 100% data privacy.
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-500 mb-1 block">
+                  Local Endpoint
+                </label>
+                <input
+                  type="text"
+                  value={config.endpoint}
+                  onChange={(e) => handleChange("endpoint", e.target.value)}
+                  placeholder={provider.defaultEndpoint}
+                  className="w-full bg-slate-800 border-none rounded-lg p-3 text-sm focus:ring-1 focus:ring-primary text-slate-200"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] font-black uppercase text-slate-500 mb-1 block">
+                  Model Name
+                </label>
+                <input
+                  type="text"
+                  value={config.model}
+                  onChange={(e) => handleChange("model", e.target.value)}
+                  placeholder={provider.defaultModel}
+                  className="w-full bg-slate-800 border-none rounded-lg p-3 text-sm text-slate-200 focus:ring-1 focus:ring-primary"
+                />
+              </div>
+            </div>
           </div>
-          <p className="text-slate-400 text-sm leading-relaxed mb-6">
-            Run private Llama 3, Mistral, or Gemma models directly on your
-            hardware. Zero latency, 100% data privacy.
-          </p>
-          <div className="space-y-4">
-            <div>
-              <label className="text-[10px] font-black uppercase text-slate-500 mb-1 block">
-                Local Endpoint
-              </label>
-              <input
-                type="text"
-                value={config.endpoint}
-                onChange={(e) => handleChange("endpoint", e.target.value)}
-                placeholder={provider.defaultEndpoint}
-                className="w-full bg-slate-800 border-none rounded-lg p-3 text-sm focus:ring-1 focus:ring-primary text-slate-200"
-              />
-            </div>
-            <div>
-              <label className="text-[10px] font-black uppercase text-slate-500 mb-1 block">
-                Model Name
-              </label>
-              <input
-                type="text"
-                value={config.model}
-                onChange={(e) => handleChange("model", e.target.value)}
-                placeholder={provider.defaultModel}
-                className="w-full bg-slate-800 border-none rounded-lg p-3 text-sm text-slate-200 focus:ring-1 focus:ring-primary"
-              />
-            </div>
-            {testMsg && (
-              <p className={`text-xs ${verified ? "text-emerald-400" : "text-red-400"}`}>{testMsg}</p>
-            )}
-            <button
-              onClick={handleTest}
-              disabled={testing}
-              className="w-full py-3 bg-white text-slate-900 font-black rounded-lg text-sm hover:bg-slate-200 transition-colors disabled:opacity-40"
-            >
-              {testing ? "Testing..." : "Test & Save"}
-            </button>
-          </div>
-        </div>
-        <div className="bg-slate-800/50 backdrop-blur-md p-6 rounded-xl border border-white/5">
-          <h4 className="text-sm font-bold mb-4 flex items-center gap-2">
-            <span className={`w-2 h-2 rounded-full ${verified ? "bg-emerald-400" : "bg-slate-400"}`} />
-            System Health
-          </h4>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-slate-400">Connection Status</span>
-              <span className={`font-bold ${verified ? "text-emerald-400" : "text-slate-400"}`}>
-                {verified ? "CONNECTED" : "—"}
-              </span>
-            </div>
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-slate-400">Endpoint</span>
-              <span className="text-white font-bold text-[10px]">
-                {config.endpoint || provider.defaultEndpoint}
-              </span>
-            </div>
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-slate-400">Active Model</span>
-              <span className="text-white font-bold">
-                {config.model || provider.defaultModel}
-              </span>
+          <div className="bg-slate-800/50 backdrop-blur-md p-6 rounded-xl border border-white/5 flex flex-col">
+            <h4 className="text-sm font-bold mb-4 flex items-center gap-2">
+              <span className={`w-2 h-2 rounded-full ${verified ? "bg-emerald-400" : "bg-slate-400"}`} />
+              System Health
+            </h4>
+            <div className="space-y-4 flex-1">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-400">Connection Status</span>
+                <span className={`font-bold ${verified ? "text-emerald-400" : "text-slate-400"}`}>
+                  {verified ? "CONNECTED" : "—"}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-400">Endpoint</span>
+                <span className="text-white font-bold text-[10px]">
+                  {config.endpoint || provider.defaultEndpoint}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-400">Active Model</span>
+                <span className="text-white font-bold">
+                  {config.model || provider.defaultModel}
+                </span>
+              </div>
             </div>
           </div>
         </div>
+        {testMsg && (
+          <p className={`text-xs mt-4 ${verified ? "text-emerald-400" : "text-red-400"}`}>{testMsg}</p>
+        )}
+        <button
+          onClick={handleTest}
+          disabled={testing}
+          className="w-full py-3 mt-4 bg-white text-slate-900 font-black rounded-lg text-sm hover:bg-slate-200 transition-colors disabled:opacity-40"
+        >
+          {testing ? "Testing..." : "Test & Save"}
+        </button>
       </div>
     </div>
   );

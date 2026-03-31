@@ -88,26 +88,71 @@ async fn translate_mymemory(client: &Client, req: &TranslateRequest) -> Result<S
     let to = lang_code_mymemory(&req.to);
     let langpair = format!("{}|{}", from, to);
 
-    let url = format!(
-        "https://api.mymemory.translated.net/get?q={}&langpair={}",
-        urlencoding::encode(&req.text),
-        urlencoding::encode(&langpair)
-    );
+    // MyMemory API has a 500-character limit per query; split long text into chunks
+    let chunks = split_text_chunks(&req.text, 490);
+    let mut results = Vec::new();
 
-    let resp = client.get(&url).send().await.map_err(|e| e.to_string())?;
-    let body: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
+    for chunk in &chunks {
+        let url = format!(
+            "https://api.mymemory.translated.net/get?q={}&langpair={}",
+            urlencoding::encode(chunk),
+            urlencoding::encode(&langpair)
+        );
 
-    let text = body["responseData"]["translatedText"]
-        .as_str()
-        .map(|s| s.to_string())
-        .ok_or_else(|| "Failed to parse MyMemory response".to_string())?;
+        let resp = client.get(&url).send().await.map_err(|e| e.to_string())?;
+        let body: serde_json::Value = resp.json().await.map_err(|e| e.to_string())?;
 
-    // MyMemory returns this error when source and target languages are the same
-    if text.contains("PLEASE SELECT TWO DISTINCT LANGUAGES") {
-        return Err("Source and target languages appear to be the same. Please select a different target language.".to_string());
+        let text = body["responseData"]["translatedText"]
+            .as_str()
+            .map(|s| s.to_string())
+            .ok_or_else(|| "Failed to parse MyMemory response".to_string())?;
+
+        if text.contains("PLEASE SELECT TWO DISTINCT LANGUAGES") {
+            return Err("Source and target languages appear to be the same. Please select a different target language.".to_string());
+        }
+
+        results.push(text);
     }
 
-    Ok(text)
+    Ok(results.join(""))
+}
+
+/// Split text into chunks of at most `max_len` characters, breaking at newlines
+/// or sentence-ending punctuation when possible.
+fn split_text_chunks(text: &str, max_len: usize) -> Vec<String> {
+    if text.len() <= max_len {
+        return vec![text.to_string()];
+    }
+
+    let mut chunks = Vec::new();
+    let mut remaining = text;
+
+    while !remaining.is_empty() {
+        if remaining.len() <= max_len {
+            chunks.push(remaining.to_string());
+            break;
+        }
+
+        let search_region = &remaining[..max_len];
+        // Try to break at newline, then sentence-ending punctuation, then last space
+        let split_pos = search_region.rfind('\n')
+            .map(|i| i + 1)
+            .or_else(|| {
+                search_region.rfind(|c: char| c == '.' || c == '!' || c == '?' || c == '。' || c == '！' || c == '？' || c == '\n')
+                    .map(|i| i + c_len_at(search_region, i))
+            })
+            .or_else(|| search_region.rfind(' ').map(|i| i + 1))
+            .unwrap_or(max_len);
+
+        chunks.push(remaining[..split_pos].to_string());
+        remaining = &remaining[split_pos..];
+    }
+
+    chunks
+}
+
+fn c_len_at(s: &str, byte_pos: usize) -> usize {
+    s[byte_pos..].chars().next().map_or(1, |c| c.len_utf8())
 }
 
 async fn translate_deepl(client: &Client, req: &TranslateRequest) -> Result<String, String> {
