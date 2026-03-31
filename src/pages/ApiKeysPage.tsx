@@ -402,9 +402,9 @@ function OllamaCard() {
   };
 
   return (
-    <div className="bg-slate-900 text-white p-10 rounded-xl relative overflow-hidden">
-      <div className="absolute -right-20 -top-20 w-64 h-64 bg-primary/20 rounded-full blur-3xl" />
-      <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+    <div className="bg-slate-900 text-white p-10 rounded-xl relative">
+      <div className="absolute -right-20 -top-20 w-64 h-64 bg-primary/20 rounded-full blur-3xl pointer-events-none" />
+      <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-12 items-start">
         <div>
           <div className="flex items-center gap-4 mb-4">
             <span className="bg-primary p-3 rounded-lg">
